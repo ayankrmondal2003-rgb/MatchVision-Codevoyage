@@ -48,7 +48,7 @@ class MatchVisionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp) / "uploaded clip.avi"
             save_video([np.zeros((120, 160, 3), np.uint8)] * 2, source, fps=12.5)
-            with patch.object(Tracker, "__init__", return_value=None) as init, patch.object(
+            with patch.object(Tracker, "__init__", autospec=True, side_effect=lambda self, *args, **kwargs: setattr(self, "device", "cpu")) as init, patch.object(
                 Tracker, "get_object_tracks", side_effect=lambda *args, **kwargs: {
                     "players": [{}, {}], "ball": [{}, {}], "referees": [{}, {}]
                 }
@@ -57,7 +57,9 @@ class MatchVisionTests(unittest.TestCase):
                 second = analyze_match(source, Path(tmp) / "results")
             self.assertNotEqual(first["analysis_id"], second["analysis_id"])
             self.assertEqual(init.call_args.kwargs["frame_rate"], 12.5)
-            self.assertEqual(detection.call_args.kwargs, {"read_from_stub": False, "stub_path": None})
+            self.assertFalse(detection.call_args.kwargs["read_from_stub"])
+            self.assertIsNone(detection.call_args.kwargs["stub_path"])
+            self.assertTrue(callable(detection.call_args.kwargs["progress_callback"]))
             self.assertEqual(first["possession"]["unknown_frames"], 2)
             self.assertEqual(first["players"], [])
             self.assertEqual(first["schema_version"], "2.3")
@@ -86,7 +88,7 @@ class MatchVisionTests(unittest.TestCase):
                 with self.assertLogs("matchvision.analysis", level="ERROR"), self.assertRaises(AnalysisError):
                     analyze_match(source, Path(tmp) / "results")
             failure = next((Path(tmp) / "results").glob("*/failure.json"))
-            self.assertEqual(json.loads(failure.read_text())["stage"], "detect and track")
+            self.assertEqual(json.loads(failure.read_text())["stage"], "Detecting and tracking players")
             self.assertFalse((failure.parent / "analysis.json").exists())
 
 

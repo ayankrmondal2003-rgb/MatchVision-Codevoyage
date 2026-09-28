@@ -12,3 +12,6 @@ pandas
 scikit-learn
 torch
 torchvision
+
+# Local launcher supplies FFmpeg for browser-compatible video output.
+imageio-ffmpeg>=0.6,<0.7

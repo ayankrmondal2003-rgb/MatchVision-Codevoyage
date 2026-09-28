@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MatchVision — AI Football Video Analytics & Tactical Hub</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300FF87'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z'/></svg>">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <div class="brand-logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5 10 5 10-5-5-2.5-5 2.5z"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>MatchVision <span class="brand-badge">CV ENGINE v2.3</span></h1>
+      </div>
+    </div>
+
+    <!-- Live Match Scoreboard Capsule -->
+    <div class="header-scoreboard">
+      <div class="team-pill">
+        <span class="team-dot t1"></span>
+        <span id="headerTeam1Name">ARS</span>
+      </div>
+      <div class="score-display" id="headerScore">2 — 1</div>
+      <div class="team-pill">
+        <span class="team-dot t2"></span>
+        <span id="headerTeam2Name">MCI</span>
+      </div>
+      <div class="live-indicator">
+        <span class="live-pulse"></span>
+        <span>ANALYTICS ACTIVE</span>
+      </div>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <button class="btn btn-glass" id="openUploadBtn" title="Upload Video & Calibrate Pitch">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload & Calibrate
+      </button>
+      <button class="btn btn-glass" id="exportReportBtn" title="Export Match JSON & PDF">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Analysis
+      </button>
+      <button class="btn btn-primary" id="liveModeBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Auto Play
+      </button>
+    </div>
+  </header>
+
+  <!-- View Navigation Tabs -->
+  <nav class="view-navigation" role="tablist">
+    <button class="nav-tab active" data-tab="match-center" id="tabMatchCenter">
+      <span class="tab-indicator"></span>
+      Match Center & Video Tracking
+    </button>
+    <button class="nav-tab" data-tab="tactical-studio" id="tabTacticalStudio">
+      <span class="tab-indicator"></span>
+      Tactical Studio (Heatmaps & Passing)
+    </button>
+    <button class="nav-tab" data-tab="highlights-studio" id="tabHighlightsStudio">
+      <span class="tab-indicator"></span>
+      Event Highlights & Key Moments
+    </button>
+  </nav>
+
+  <!-- Main View: Match Center -->
+  <main class="dashboard-container" id="matchCenterView">
+    <!-- Left Column: Video Stage + Event Scrubber -->
+    <div class="main-stage">
+      <div class="stage-card">
+        <!-- Video Player with Overlay Canvas -->
+        <div class="video-player-container" id="videoContainer">
+          <video class="main-video" id="matchVideo" src="sample_match.mp4" playsinline preload="auto" loop muted></video>
+          <canvas class="tracking-overlay-canvas" id="cvCanvas"></canvas>
+
+          <!-- Interactive Video Player HUD -->
+          <div class="video-hud-overlay">
+            <div class="video-progress-rail" id="progressRail">
+              <div class="video-progress-fill" id="progressFill">
+                <div class="video-progress-handle"></div>
+              </div>
+            </div>
+
+            <div class="video-controls-row">
+              <div class="video-controls-left">
+                <button class="ctrl-btn" id="playPauseBtn" title="Play/Pause (Space)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" id="playIcon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+                <button class="ctrl-btn" id="stepBackBtn" title="Step Back 1s">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+                </button>
+                <button class="ctrl-btn" id="stepForwardBtn" title="Step Forward 1s">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+                </button>
+                <div class="timestamp-badge" id="videoTimestamp">00:00.0 / 00:28.5</div>
+                <div class="timestamp-badge" style="color: var(--accent-green);" id="fpsBadge">25 FPS CV SYNC</div>
+              </div>
+
+              <div class="video-controls-right">
+                <button class="ctrl-btn" id="speedToggleBtn" title="Playback Speed">1.0x</button>
+                <button class="ctrl-btn" id="muteToggleBtn" title="Mute/Unmute">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                </button>
+                <button class="ctrl-btn" id="fullscreenBtn" title="Toggle Fullscreen">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Computer Vision Overlay Control Bar -->
+        <div class="layer-toggles-bar">
+          <div class="toggles-group">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">CV Overlays:</span>
+            <button class="toggle-chip active" data-layer="boxes" id="toggleBoxes">
+              <span>●</span> Player Bounding Boxes
+            </button>
+            <button class="toggle-chip active" data-layer="speed" id="toggleSpeed">
+              <span>●</span> Speed Badges (km/h)
+            </button>
+            <button class="toggle-chip active" data-layer="ball" id="toggleBall">
+              <span>●</span> Ball Trajectory Vector
+            </button>
+            <button class="toggle-chip active" data-layer="possession" id="togglePossession">
+              <span>●</span> Possession Aura
+            </button>
+          </div>
+          <div style="font-size: 0.78rem; font-family: var(--font-mono); color: var(--text-muted);" id="activeTrackerCount">
+            TRACKING 22 PLAYERS + BALL
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrubber Timeline Card -->
+      <div class="stage-card timeline-card">
+        <div class="timeline-header">
+          <div class="timeline-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Match Event Scrubber Timeline
+          </div>
+          <div class="event-legend">
+            <div class="legend-item"><span class="legend-dot goal"></span> Goal</div>
+            <div class="legend-item"><span class="legend-dot shot"></span> Shot</div>
+            <div class="legend-item"><span class="legend-dot pass"></span> Key Pass</div>
+            <div class="legend-item"><span class="legend-dot turnover"></span> Turnover</div>
+          </div>
+        </div>
+
+        <!-- Interactive Event Ribbon -->
+        <div class="interactive-timeline-track" id="timelineTrack">
+          <svg class="timeline-waveform-bg" preserveAspectRatio="none" viewBox="0 0 1000 50">
+            <path d="M0 25 Q 50 10, 100 25 T 200 25 T 300 15 T 400 35 T 500 20 T 600 40 T 700 15 T 800 30 T 900 25 T 1000 25" fill="none" stroke="var(--accent-cyan)" stroke-width="2"/>
+            <path d="M0 25 Q 80 40, 160 25 T 320 20 T 480 38 T 640 12 T 800 28 T 960 25 L 1000 25" fill="none" stroke="var(--accent-green)" stroke-width="2"/>
+          </svg>
+          <div class="timeline-needle" id="timelineNeedle"></div>
+          <div id="eventMarkersContainer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: 2D Pitch Radar & Telemetry -->
+    <aside class="sidebar-panel">
+      <!-- 2D Pitch Mini-Radar Card -->
+      <div class="sidebar-card">
+        <div class="card-title-row">
+          <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            2D Tactical Pitch Radar
+          </div>
+          <span style="font-size: 0.72rem; font-family: var(--font-mono); color: var(--accent-green);">PERSPECTIVE 105x68m</span>
+        </div>
+        <canvas class="pitch-radar-canvas" id="miniRadarCanvas" width="420" height="272"></canvas>
+        <div style="display: flex; justify-content: space-between; margin-top: 0.6rem; font-size: 0.75rem; color: var(--text-muted);">
+          <span><span style="color: var(--accent-green); font-weight: 700;">● ARS</span> (Attack →)</span>
+          <span id="activeBallCarrierText" style="color: var(--accent-amber); font-weight: 600;">Ball in Play</span>
+          <span>(← Attack) <span style="color: var(--accent-cyan); font-weight: 700;">MCI ●</span></span>
+        </div>
+      </div>
+
+      <!-- Real-Time Team Possession Split -->
+      <div class="sidebar-card">
+        <div class="card-title-row">
+          <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+            Ball Possession Split
+          </div>
+          <span style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted);">ROLLING 5-MIN</span>
+        </div>
+        <div class="possession-gauge-box">
+          <div class="possession-numbers-row">
+            <div>
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">ARSENAL</span>
+              <div class="poss-t1-val" id="possT1">54%</div>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">MAN CITY</span>
+              <div class="poss-t2-val" id="possT2">46%</div>
+            </div>
+          </div>
+          <div class="possession-meter-bar">
+            <div class="possession-t1-fill" id="possMeterFill" style="width: 54%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Peak Sprint Speed Leaderboard -->
+      <div class="sidebar-card">
+        <div class="card-title-row">
+          <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Top Speed Leaderboard
+          </div>
+          <span style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted);">KM/H</span>
+        </div>
+        <div class="speed-list" id="speedLeaderboard">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- Match Key Stats Comparison -->
+      <div class="sidebar-card">
+        <div class="card-title-row">
+          <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            Match Summary Stats
+          </div>
+          <span style="font-size: 0.72rem; color: var(--text-muted);">AGGREGATE</span>
+        </div>
+        <div class="stats-grid" id="statsGridContainer">
+          <!-- Dynamic Match Statistics -->
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- View: Tactical Studio -->
+  <section class="tactical-view-wrapper" id="tacticalStudioView">
+    <div class="tactical-pitch-stage">
+      <div class="pitch-stage-toolbar">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <h2 style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 700;">Tactical Spatial Canvas</h2>
+          <div style="display: flex; gap: 0.35rem; background: var(--bg-surface); padding: 3px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+            <button class="btn btn-glass active" id="btnModePassing" style="padding: 0.35rem 0.8rem; font-size: 0.78rem;">Passing Network</button>
+            <button class="btn btn-glass" id="btnModeHeatmap" style="padding: 0.35rem 0.8rem; font-size: 0.78rem;">Occupancy Heatmap</button>
+            <button class="btn btn-glass" id="btnModeFormation" style="padding: 0.35rem 0.8rem; font-size: 0.78rem;">Team Shape & Lines</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-glass" id="btnTeamFilter1" style="color: var(--accent-green); border-color: rgba(0, 255, 135, 0.4);">Arsenal (Team 1)</button>
+          <button class="btn btn-glass" id="btnTeamFilter2" style="color: var(--accent-cyan); border-color: rgba(0, 229, 255, 0.4);">Man City (Team 2)</button>
+        </div>
+      </div>
+
+      <canvas class="tactical-canvas-main" id="tacticalMainCanvas" width="940" height="608"></canvas>
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: var(--text-muted);">
+        <div id="tacticalLegendText">Showing Arsenal passing network web with volume-weighted directed edges.</div>
+        <div style="font-family: var(--font-mono); color: var(--accent-green);" id="tacticalFormationText">Observed Formation: 4-3-3 Attacking (Compactness: 684m²)</div>
+      </div>
+    </div>
+
+    <!-- Tactical Details Sidebar -->
+    <aside class="sidebar-panel">
+      <div class="sidebar-card">
+        <div class="card-title-row">
+          <div class="card-title">Formation Metrics</div>
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-green);">ESTIMATED</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">Primary Formation</span>
+            <strong style="color: var(--accent-green);" id="tacticalCardFormation">4-3-3 Attacking</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">Defensive Line Height</span>
+            <strong id="tacticalCardLineHeight">48.6 m</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">Team Compactness</span>
+            <strong id="tacticalCardCompactness">684.2 m²</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">Team Centroid</span>
+            <strong id="tacticalCardCentroid">X: 52.4m, Y: 33.8m</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="card-title-row">
+          <div class="card-title">Passing Matrix (Top Pairs)</div>
+          <span style="font-size: 0.72rem; color: var(--accent-cyan);">COMPLETED</span>
+        </div>
+        <div class="speed-list" id="passingMatrixList">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- View: Event Highlights Studio -->
+  <section class="tactical-view-wrapper" id="highlightsStudioView">
+    <div class="tactical-pitch-stage">
+      <h2 style="font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">Auto-Generated Match Highlights & Key Moments</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+        MatchVision automatically segments significant events based on shot probabilities, through-ball classification, and goal scoring moments.
+      </p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;" id="highlightsCardGrid">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+
+    <aside class="sidebar-panel">
+      <div class="sidebar-card">
+        <div class="card-title-row">
+          <div class="card-title">Shot Probability Matrix</div>
+          <span style="font-size: 0.72rem; color: var(--accent-amber);">xG MODEL</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.8rem;" id="shotsListContainer">
+          <!-- Dynamic Shots Breakdown -->
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- Upload & Calibration Modal -->
+  <div class="modal-backdrop" id="uploadModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">Upload Video & Configure MatchVision</div>
+        <button class="modal-close-btn" id="closeUploadModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="dropzone-box" id="dropzoneBox">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="1.5" style="margin-bottom: 0.6rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p style="font-weight: 600; font-size: 0.95rem;">Drag & drop your football match footage (.mp4, .avi)</p>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Supports 1080p / 4K broadcast footage up to 2GB</span>
+          <div style="margin-top: 0.8rem;">
+            <input type="file" id="videoFileInput" accept="video/mp4,video/avi" style="display: none;">
+            <button class="btn btn-glass" onclick="document.getElementById('videoFileInput').click()">Browse Files</button>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">
+            <span>Shot Detection Confidence Threshold</span>
+            <span id="shotConfVal" style="color: var(--accent-green); font-family: var(--font-mono);">0.80</span>
+          </label>
+          <input type="range" class="range-slider" min="0.5" max="0.95" step="0.05" value="0.80" id="shotConfSlider">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">
+            <span>Shot Cooldown Window (Seconds)</span>
+            <span id="shotCooldownVal" style="color: var(--accent-cyan); font-family: var(--font-mono);">1.50s</span>
+          </label>
+          <input type="range" class="range-slider" min="0.5" max="5.0" step="0.25" value="1.50" id="shotCooldownSlider">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.8rem;">
+          <button class="btn btn-glass" id="cancelUploadBtn">Cancel</button>
+          <button class="btn btn-primary" id="startProcessingBtn">Start Computer Vision Pipeline</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Hover Tooltip -->
+  <div class="tooltip-bubble" id="uiTooltip"></div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
