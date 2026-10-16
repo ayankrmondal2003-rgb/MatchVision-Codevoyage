@@ -1,0 +1,21 @@
+# Paid CPU service. Review Render's cost estimate before creating the Blueprint.
+services:
+  - type: web
+    name: matchvision
+    runtime: docker
+    plan: 2c-8g
+    numInstances: 1
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    disk:
+      name: matchvision-data
+      mountPath: /app/storage
+      sizeGB: 20
+    envVars:
+      - key: MATCHVISION_MAX_ACTIVE_JOBS
+        value: "2"
+      - key: MATCHVISION_MAX_UPLOAD_BYTES
+        value: "209715200"
+      - key: MATCHVISION_CONVERSION_TIMEOUT_SECONDS
+        value: "1800"

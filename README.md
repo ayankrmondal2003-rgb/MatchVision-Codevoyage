@@ -1,5 +1,7 @@
 # MatchVision
 
+**Render deployment:** See [DEPLOY-RENDER.md](DEPLOY-RENDER.md) for the Docker-based frontend + API deployment and hosting requirements.
+
 > **Video-Based Football Match Analytics for Teams**\
 > Turn ordinary match footage into structured, explainable performance
 > and tactical observations.
