@@ -4,6 +4,20 @@ The root `render.yaml` deploys one Docker web service. FastAPI serves the built 
 
 ## Deploy
 
+### Existing Python service
+
+You can keep the native Python service. Push `render-build.sh`, `render_start.py`, and the updated API code, then set:
+
+- Root Directory: blank (repository root).
+- Build Command: `bash render-build.sh`
+- Start Command: `python -u render_start.py`
+- Health Check Path: `/api/health`
+- Remove a stale `MATCHVISION_FRONTEND_DIST` override (particularly `/app/frontend/dist`, which belongs to Docker). The launcher finds the build automatically.
+
+The build requires Node.js 22.12+ alongside Python. The launcher provides FFmpeg from the installed imageio package, checks the frontend, and prints startup stages. If API import takes over 60 seconds, it prints a diagnostic stack trace. These changes fix native frontend configuration and improve diagnostics; they do not establish the cause of a Render platform timeout before the start command runs. Use a paid instance sized for analysis as discussed below. Persistent storage still needs configuring separately for a manually created service.
+
+### Docker / Blueprint
+
 1. Commit and push these changes to your GitHub repository, including `Dockerfile`, `.dockerignore`, and `render.yaml`.
 2. Ensure the real `model/best.pt` weights are uploaded through Git LFS (`git lfs push --all origin`). The file is about 107 MB. The Docker build checks that it is not just a small LFS pointer; if this check fails, check the repository's LFS availability/quota and fetch the weights before rebuilding. Do not replace it with a generic YOLO model.
 3. In Render choose **New > Blueprint**, connect the repository, and select the branch containing these changes. Keep the repository root as the build context.

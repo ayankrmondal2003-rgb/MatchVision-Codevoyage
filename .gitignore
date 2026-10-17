@@ -1,5 +1,6 @@
 # Virtual environment
 .venv/
+.render-bin/
 
 # Python cache
 __pycache__/

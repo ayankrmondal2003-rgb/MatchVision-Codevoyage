@@ -13,7 +13,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.responses import FileResponse
 
-from .config import Settings
+from .config import PROJECT_ROOT, Settings
 from .jobs import JobManager
 from .middleware import UploadLimitMiddleware
 from .routes import router
@@ -84,8 +84,10 @@ def create_app(settings=None):
         logger.error("Unhandled API error", exc_info=(type(exc), exc, exc.__traceback__))
         return JSONResponse(status_code=500, content={"detail": "Internal server error; see the server log"})
 
-    # Explicit opt-in keeps the existing local Vite development workflow intact.
+    # Render's native Python runtime does not inherit Dockerfile environment values.
     frontend_dir = os.getenv("MATCHVISION_FRONTEND_DIST")
+    if not frontend_dir and os.getenv("RENDER", "").lower() == "true":
+        frontend_dir = str(PROJECT_ROOT / "frontend" / "dist")
     if frontend_dir:
         if not (Path(frontend_dir) / "index.html").is_file():
             raise RuntimeError("Frontend build missing; build frontend before starting the service")

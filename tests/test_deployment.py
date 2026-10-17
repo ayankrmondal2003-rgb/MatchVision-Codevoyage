@@ -11,6 +11,23 @@ from matchvision.api.config import Settings
 
 
 class DeploymentTests(unittest.TestCase):
+    def test_native_render_automatically_serves_frontend(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "frontend/dist").mkdir(parents=True)
+            (root / "frontend/dist/index.html").write_text("Native Render frontend")
+            settings = Settings(upload_root=root / "uploads", output_root=root / "outputs")
+            with patch.dict(os.environ, {"RENDER": "true", "MATCHVISION_FRONTEND_DIST": ""}), patch(
+                "matchvision.api.app.PROJECT_ROOT", root
+            ):
+                with TestClient(create_app(settings)) as client:
+                    self.assertEqual(client.get("/").text, "Native Render frontend")
+                    self.assertEqual(client.head("/").status_code, 200)
+                    self.assertEqual(client.get("/api/health").status_code, 200)
+                (root / "frontend/dist/index.html").unlink()
+                with self.assertRaisesRegex(RuntimeError, "Frontend build missing"):
+                    create_app(settings)
+
     def test_production_routes_and_asset_isolation(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

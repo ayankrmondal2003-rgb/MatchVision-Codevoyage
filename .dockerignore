@@ -1,5 +1,6 @@
 .git
 .venv
+.render-bin
 **/__pycache__
 **/*.pyc
 **/node_modules
